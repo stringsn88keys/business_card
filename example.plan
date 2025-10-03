@@ -1,0 +1,11 @@
+# Example configuration file for business_card gem
+# Copy this to ~/.plan or ~/.project to customize your business card
+
+name: "Thomas Powell"
+title: "Senior Principal Software Engineer"
+company: "Progress Chef"
+email: "twilliampowell@gmail.com"
+github: "github.com/stringsn88keys"
+linkedin: "linkedin.com/in/twilliampowell"
+website: "https://thomaspowell.com"
+skills: "Ruby • Rails • DevOps • AWS Solutions Architect"
