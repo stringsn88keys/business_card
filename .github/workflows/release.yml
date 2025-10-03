@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.1'
+        bundler-cache: true
+
+    - name: Configure Git
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+
+    - name: Determine version type
+      id: version_type
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "type=${{ github.event.inputs.version_type }}" >> $GITHUB_OUTPUT
+        else
+          # Check if this is a version bump commit
+          if git log -1 --pretty=%B | grep -q "chore: bump version"; then
+            echo "type=skip" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+        fi
+
+    - name: Bump version
+      if: steps.version_type.outputs.type != 'skip'
+      run: |
+        ruby scripts/bump_version.rb ${{ steps.version_type.outputs.type }}
+        
+        # Commit the version bump
+        git add lib/business_card/version.rb CHANGELOG.md
+        git commit -m "chore: bump version to $(ruby -e "require_relative 'lib/business_card/version'; puts BusinessCard::VERSION")"
+        
+        # Push the changes
+        git push origin main
+
+    - name: Get version
+      id: version
+      run: |
+        ruby -e "require_relative 'lib/business_card/version'; puts BusinessCard::VERSION" > version.txt
+        echo "version=$(cat version.txt)" >> $GITHUB_OUTPUT
+
+    - name: Build gem
+      run: |
+        gem build business_card.gemspec
+
+    - name: Create Release
+      if: steps.version_type.outputs.type != 'skip'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: Release v${{ steps.version.outputs.version }}
+        body_path: CHANGELOG.md
+        draft: false
+        prerelease: false
+
+    - name: Upload Gem
+      if: steps.version_type.outputs.type != 'skip'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./business_card-${{ steps.version.outputs.version }}.gem
+        asset_name: business_card-${{ steps.version.outputs.version }}.gem
+        asset_content_type: application/octet-stream
+
+    - name: Publish to RubyGems
+      if: steps.version_type.outputs.type != 'skip'
+      run: |
+        gem push business_card-${{ steps.version.outputs.version }}.gem
+      env:
+        RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}

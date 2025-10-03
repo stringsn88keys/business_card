@@ -4,6 +4,7 @@ require "yaml"
 require "colorize"
 require "tty-box"
 require "tty-link"
+require_relative "business_card/version"
 
 module BusinessCard
   class Card

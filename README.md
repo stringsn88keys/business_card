@@ -69,36 +69,84 @@ See `example.plan` for a complete example configuration file.
 ### Setup
 
 ```bash
-git clone https://github.com/yourusername/business_card.git
+git clone https://github.com/stringsn88keys/business_card.git
 cd business_card
 bundle install
 ```
 
+### Version Management
+
+The gem uses semantic versioning with automated version bumping via GitHub Actions.
+
+#### Local Version Management
+
+```bash
+# Show current version
+rake version:show
+
+# Bump versions locally
+rake version:patch  # 1.0.0 -> 1.0.1
+rake version:minor  # 1.0.0 -> 1.1.0
+rake version:major  # 1.0.0 -> 2.0.0
+
+# Or use the script directly
+ruby scripts/bump_version.rb patch
+```
+
+#### Automated Version Management
+
+1. **Manual Release**: Go to Actions → "Version Bump" → Run workflow
+2. **Automatic Release**: Push to main branch (bumps patch version)
+3. **GitHub Actions** will:
+   - Bump the version
+   - Update CHANGELOG.md
+   - Create a Git tag
+   - Build the gem
+   - Create a GitHub release
+   - Publish to RubyGems
+
+#### Required GitHub Secrets
+
+For automated publishing to RubyGems, add this secret to your repository:
+- `RUBYGEMS_API_KEY`: Your RubyGems API key (get from https://rubygems.org/settings/edit)
+
 ### Testing
 
 ```bash
+# Run the business card
+rake run
+
+# Test with example configuration
+rake test
+
 # Build the gem
-gem build business_card.gemspec
+rake release:build
 
 # Install locally
-gem install ./business_card-1.0.0.gem
-
-# Run
-business_card
+rake release:install
 
 # Uninstall for testing
-gem uninstall business_card
+rake release:uninstall
+
+# Clean up built gems
+rake release:clean
 ```
 
 ### Publishing
+
+The gem is automatically published to RubyGems when you:
+1. Use the "Version Bump" GitHub Action, or
+2. Push changes to the main branch
+
+For manual publishing:
 
 ```bash
 # First time setup
 gem signin
 
 # Build and push
-gem build business_card.gemspec
-gem push business_card-1.0.0.gem
+rake release:build
+gem push business_card-$(rake version:show).gem
 ```
 
 ## Contributing

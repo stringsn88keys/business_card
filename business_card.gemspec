@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "lib/business_card/version"
+
 Gem::Specification.new do |spec|
   spec.name          = "business_card"
-  spec.version       = "1.0.0"
+  spec.version       = BusinessCard::VERSION
   spec.authors       = ["Thomas Powell"]
   spec.email         = ["twilliampowell@gmail.com"]
 
